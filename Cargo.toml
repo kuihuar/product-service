@@ -1,0 +1,13 @@
+[package]
+name = "product-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prost = "0.13.1"
+tokio = "1.38.1"
+tonic = "0.12.1"
+
+[build-dependencies]
+tonic-build = "0.12.1"
+prost-build = "0.13.1"
