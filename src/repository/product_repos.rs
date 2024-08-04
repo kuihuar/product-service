@@ -10,7 +10,7 @@ pub trait ProductRepository{
     async fn update_product(&self, product: &Product) ->Result<Product, anyhow::Error>;
     async fn delete_product(&self, id:u64) ->Result<(), anyhow::Error>;
 }
-
+#[derive(Clone)]
 pub struct InMemoryProductRepository{
     products: Arc<RwLock<HashMap<u64, Product>>>,
 }
