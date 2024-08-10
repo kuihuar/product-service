@@ -1,45 +1,46 @@
 use std::sync::Arc;
 use std::sync::Mutex;
-
-// use crate::models::product_model::Product as ProductModel;
+use tonic::Status;
+use crate::models::product_model::Product as ProductModel;
 use crate::proto::product::{
     product_service_server::ProductService, CreateProductRequest, CreateProductResponse,
     GetProductRequest, GetProductResponse, Product, UpdateProductRequest, UpdateProductResponse,
 };
 use crate::repository::product_repos::ProductRepository;
 // #[derive(Default)]
-pub struct ProductServiceImpl {
-    // repository: Box<dyn ProductRepository>,
-    repository: Arc<Mutex<Box<dyn ProductRepository + Send + Sync>>>,
-}
+// pub struct ProductServiceImpl {
+//     // repository: Box<dyn ProductRepository>,
+//     repository: Arc<Mutex<Box<dyn ProductRepository + Send + Sync>>>,
+// }
 
-// 实现的是后面是ProductService 还是 ProductServiceImpl？？
+// // 实现的是后面是ProductService 还是 ProductServiceImpl？？
+// impl ProductServiceImpl {
+//     pub async fn new(repository: impl ProductRepository + 'static + Send + Sync) -> Self {
+//         ProductServiceImpl {
+//             repository: Arc::new(Mutex::new(Box::new(repository))),
+//         }
+//     }
+// }
+pub struct ProductServiceImpl {
+    repository: Arc<Mutex<Box<dyn ProductRepository + Send + Sync + 'static>>>,
+    
+}
 impl ProductServiceImpl {
-//   pub fn new(product_repository: Box<dyn ProductRepository>) -> Self {
-//     ProductServiceImpl {
-//           product_repository,
-//       }
-//   }
-pub async fn new(repository: impl ProductRepository + 'static + Send + Sync) -> Self {
-    ProductServiceImpl {
-        repository: Arc::new(Mutex::new(Box::new(repository))),
+    pub fn new(repository: Arc<Mutex<Box<dyn ProductRepository + Send + Sync + 'static>>>) -> Self {
+
+        
+        ProductServiceImpl { repository }
     }
 }
 
-  // pub fn create_product(&self, product: &Product) -> Result<Product, anyhow::Error> {
-  //     self.product_repository.create_product(product)
-  // }
-
-  // 实现其他服务方法...
-}
 
 #[tonic::async_trait]
-impl ProductService for ProductServiceImpl {
+impl ProductService for ProductServiceImpl  {
     async fn get_product(
         &self,
         _: tonic::Request<GetProductRequest>,
     ) -> Result<tonic::Response<GetProductResponse>, tonic::Status> {
-      // println!(":?", request);
+        // println!(":?", request);
         let product = Product {
             id: "1".to_string(),
             name: "Example Product".to_string(),
@@ -53,16 +54,23 @@ impl ProductService for ProductServiceImpl {
 
     async fn create_product(
         &self,
-        _: tonic::Request<CreateProductRequest>,
+        request: tonic::Request<CreateProductRequest>,
     ) -> Result<tonic::Response<CreateProductResponse>, tonic::Status> {
-        let product = Product {
+        // let create_product_request = request.into_inner();
+
+        let repos = self.repository.try_lock().unwrap();
+
+        let new_product = ProductModel {
+            name: request.into_inner().name,
+            description: request.into_inner().description,
+            price: request.into_inner().price as f64,
             id: "1".to_string(),
-            name: "Example Product".to_string(),
-            description: "This is an example product.".to_string(),
-            price: 9.99,
         };
+
+        let created_product: ProductModel = repos.create(&new_product).await?;
+        // let created_product = repos.create(&new_product).await.map_err(ServiceError::from)?;
         Ok(tonic::Response::new(CreateProductResponse {
-            product: Some(product),
+            product: Some(Product::from(created_product)),
         }))
     }
 
@@ -88,3 +96,5 @@ impl ProductService for ProductServiceImpl {
         }))
     }
 }
+
+

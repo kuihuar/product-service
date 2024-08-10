@@ -8,6 +8,7 @@ anyhow = "1.0.86"
 prost = "0.13.1"
 tokio = {version = "1.38.1", features = ["full"]}
 tonic = "0.12.1"
+sqlx = { version = "0.8.0", features = ["postgres", "runtime-tokio-native-tls"] }
 
 [build-dependencies]
 tonic-build = "0.12.1"
